@@ -1,13 +1,12 @@
 
 #include "terminal.hxx"
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #include "lua/Security.hxx"
 
 
 #include "spdlog/spdlog.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
 #include "lodepng.h"
 
 #include <memory>
@@ -18,13 +17,14 @@ void print(int x, int y, std::string str) {
 			terminal::put(x + x_off, y, 256 + str[i]);
 			terminal::put_ex(x + x_off, y, 6, 0,256 + str[i + 1]);	
 			x_off++;
+			
 	}
 }
 
 int main(int argc, char** argv) {
 	spdlog::set_pattern("%H:%M:%S.%e [%^%l%$] %v");
 	spdlog::info("Starting lyds.");
-    if(terminal::open() < 0)
+   	if(terminal::open() < 0)
 		return -1;
 	terminal::composition(true);
 	auto tileset = Tileset::from_file("Alloy.png");

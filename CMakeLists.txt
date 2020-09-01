@@ -29,9 +29,10 @@ target_include_directories(lodepng PUBLIC dependencies/lodepng)
 add_executable(lyds src/main.cxx 
 	src/tileset.cxx
     src/terminal.cxx 
+	src/console.cxx
     src/lua/Security.cxx
     src/lua/Mod.cxx
     src/lua/ModLoader.cxx)
-target_link_libraries(lyds SDL2 spdlog::spdlog sol2 lua physfs-static json lodepng)
-target_include_directories(lyds PUBLIC dependencies/physfs-3.0.2/src)
+target_link_libraries(lyds SDL2 spdlog sol2 lua_static physfs-static json lodepng)
+target_include_directories(lyds PUBLIC dependencies/physfs-3.0.2/src dependencies/lua-5.4.0/src)
 set_target_properties(lyds PROPERTIES BUILD_RPATH ${CMAKE_BINARY_DIR})
