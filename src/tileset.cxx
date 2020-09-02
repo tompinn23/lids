@@ -1,7 +1,7 @@
 #include "tileset.hxx"
 
+#include "log.h"
 #include <lodepng.h>
-#include <spdlog/spdlog.h>
 void Tileset::add_codepoint(int cp, std::vector<uint8_t> data) {
 	if(codes.size() - 1 < cp) {
 		codes.resize(cp + 1);
@@ -44,7 +44,7 @@ std::shared_ptr<Tileset> Tileset::from_file(const std::string file, int width, i
 	unsigned w, h, error;
 	error = lodepng::decode(out, w, h, file, LCT_RGBA);
 	if(error) {
-		spdlog::error("Error decoding png: {}", lodepng_error_text(error));
+		log_error("Error decoding png: %s", lodepng_error_text(error));
 		return nullptr;
 	}
 	int actual_w = w / 16;

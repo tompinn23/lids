@@ -90,7 +90,7 @@ public:
 	
 	static void change_tile(void* udata);
 	int render_entry(int x, int y,cell_entry& ent);
-
+	void raw_put(int x, int y, cell c);
 private:
 	void tileset_changed();
 	void construct_alias();
@@ -134,7 +134,7 @@ private:
 	uint32_t pick_colour(int x, int y, int idx);
 	uint32_t pick_bkcolour(int x, int y);
 	int state(int slot);
-
+	void raw_put(int x, int y, cell c);
 	int has_input();
 	int read();
 	int peek();

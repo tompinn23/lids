@@ -62,7 +62,7 @@ option(SPDLOG_BUILD_ALL "Build all artifacts" OFF)
 option(SPDLOG_BUILD_SHARED "Build shared library" OFF)
 
 # precompiled headers option
-option(SPDLOG_ENABLE_PCH "Build static or shared library using precompiled header to speed up compilation time" OFF)
+option(SPDLOG_ENABLE_PCH "Build static or shared library using precompiled header to speed up compilation time" ON)
 
 # example options
 option(SPDLOG_BUILD_EXAMPLE "Build example" ${SPDLOG_MASTER_PROJECT})
@@ -83,7 +83,7 @@ option(SPDLOG_BUILD_WARNINGS "Enable compiler warnings" OFF)
 
 # install options
 option(SPDLOG_INSTALL "Generate the install target" ${SPDLOG_MASTER_PROJECT})
-option(SPDLOG_FMT_EXTERNAL "Use external fmt library instead of bundled" OFF)
+option(SPDLOG_FMT_EXTERNAL "Use external fmt library instead of bundled" ON)
 option(SPDLOG_FMT_EXTERNAL_HO "Use external fmt header-only library instead of bundled" OFF)
 option(SPDLOG_NO_EXCEPTIONS "Compile with -fno-exceptions. Call abort() on any spdlog exceptions" OFF)
 
