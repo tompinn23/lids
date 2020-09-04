@@ -34,14 +34,17 @@ set(LUA_LIB_SRCS
 )
 #TODO: Redo this with find_package
 find_library(LIBM m)
-if(NOT LIBM)
+if(NOT LIBM AND NOT MSVC)
     message(FATAL_ERROR "libm not found and requred by lua")
 endif()
 add_library(lua_static STATIC ${LUA_LIB_SRCS})
 set_target_properties(lua_static PROPERTIES OUTPUT_NAME "lua")
+if(NOT MSVC)
 target_link_libraries(lua_static INTERFACE ${LIBM})
+endif()
 target_include_directories(lua_static PUBLIC "include")
 set(LUA_DEFINITIONS)
+
 if(UNIX)
     list(APPEND LUA_DEFINITIONS LUA_USE_POSIX)
     if(LUA_SUPPORT_DL)
@@ -52,6 +55,9 @@ endif()
 target_compile_definitions(lua_static 
     PUBLIC ${LUA_DEFINITIONS}
 )
+
+if(NOT MSVC)
 target_compile_options(lua_static
     PRIVATE "-Wall" "-Wextra"
 )
+endif()

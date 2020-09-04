@@ -513,7 +513,7 @@ PHYSFS_DECL void PHYSFS_getLinkedVersion(PHYSFS_Version *ver);
  * \sa PHYSFS_deinit
  * \sa PHYSFS_isInit
  */
-PHYSFS_DECL int PHYSFS_init(const char *argv0);
+PHYSFS_DECL int PHYSFS_init(char *argv0);
 
 
 /**

@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <memory>
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 
 namespace terminal {
@@ -30,6 +30,9 @@ namespace terminal {
 		return rgba & 0xFF;
 	}
 struct cell_entry {
+	cell_entry() : dx(0), dy(0), glyph(0), fg(0) {}
+	cell_entry(int dx, int dy, int glyph, uint32_t fg)
+		: dx(dx), dy(dy), glyph(glyph), fg(fg) {}
 	int dx;
 	int dy;
 	int glyph;
@@ -65,7 +68,7 @@ public:
 	int open();
 	int close();
 	void size(int width, int height);
-	void set_tileset(std::shared_ptr<Tileset> tileset) { this->tileset = tileset; } 
+	void set_tileset(std::shared_ptr<Tileset> tileset) { need_alias = true; this->tileset = tileset; }
 	void set_fg(uint32_t fg);
 	void set_bg(uint32_t bg);
 	void composition(bool comp);
@@ -105,7 +108,7 @@ private:
 	bool sdl_init = false;
 	SDL_Window* window;
 	SDL_Renderer* renderer;
-	SDL_Texture* alias;
+	SDL_Texture* alias = NULL;
 	std::vector<SDL_Rect> clips;
 	bool need_alias = false;
 

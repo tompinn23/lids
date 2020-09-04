@@ -13,7 +13,7 @@ set(CMAKE_SKIP_BUILD_RPATH FALSE)
 
 add_subdirectory(dependencies/SDL2-2.0.12)
 add_subdirectory(dependencies/fmt-7.0.3)
-add_subdirectory(dependencies/spdlog-1.7.0)
+
 add_subdirectory(dependencies/lua-5.4.0)
 add_subdirectory(dependencies/sol2-3.2.1)
 add_subdirectory(dependencies/physfs-3.0.2)
@@ -36,5 +36,20 @@ add_executable(lyds src/main.cxx
     src/lua/Mod.cxx
     src/lua/ModLoader.cxx)
 target_link_libraries(lyds SDL2 sol2 lua_static physfs-static json lodepng fmt::fmt)
+if(MSVC)
+target_link_libraries(lyds SDL2main)
+endif()
 target_include_directories(lyds PUBLIC dependencies/physfs-3.0.2/src dependencies/lua-5.4.0/src)
 set_target_properties(lyds PROPERTIES BUILD_RPATH ${CMAKE_BINARY_DIR})
+
+add_custom_command(
+        TARGET lyds POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_SOURCE_DIR}/Alloy.png
+                ${CMAKE_CURRENT_BINARY_DIR}/Alloy.png)
+                
+add_custom_command(
+        TARGET lyds POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_SOURCE_DIR}/font.png
+                ${CMAKE_CURRENT_BINARY_DIR}/font.png)

@@ -27,6 +27,8 @@ int main(int argc, char** argv) {
 		return -1;
 	terminal::composition(true);
 	auto tileset = Tileset::from_file("Alloy.png");
+	if (tileset == NULL)
+		return -1;
 	log_info("W: %d H: %d", tileset->width(), tileset->height());
 	{
 		auto font = Tileset::from_file("font.png", 12, 12);
