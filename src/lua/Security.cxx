@@ -1,9 +1,12 @@
 #include "Security.hxx"
 
+
+
 #include <string>
 #include "physfs.h"
 
 #include "Mod.hxx"
+#include "sole.hpp"
 
 namespace LuaApi {
 	
@@ -66,9 +69,23 @@ namespace LuaApi {
 
 	int LoadFileRequire(lua_State* L) {
 		sol::state_view lua(L);
-		LuaApi::SecurityManager
 		std::string path = sol::stack::get<std::string>(L, 1);
-		return sec.Require(lua, path);
+		//return sec.Require(lua, path);
+		return 1;
+	}
+
+	Security& SecurityManager::GetSecurityObj(std::string key) {
+		return security_map.at(key);
+	}
+
+	std::string SecurityManager::AddSecurityObj(Security obj) {
+		sole::uuid key = sole::uuid4();
+		security_map.emplace(key.str(), obj);
+		return key.str();
+	}
+
+	void SecurityManager::SetSecurityObj(std::string key, Security obj)	{
+		security_map.emplace(key, obj);
 	}
 
 }

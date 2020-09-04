@@ -29,6 +29,7 @@ namespace LuaApi {
 		SecurityManager(SecurityManager const&) = delete;
 		void operator=(SecurityManager const&) = delete;
 		Security& GetSecurityObj(std::string key);
+		std::string AddSecurityObj(Security obj);
 		void SetSecurityObj(std::string key, Security obj); 
 	private:
 		std::unordered_map<std::string, Security> security_map;
