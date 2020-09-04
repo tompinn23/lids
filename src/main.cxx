@@ -1,12 +1,12 @@
 
+#include "console.hxx"
 #include "terminal.hxx"
 
 #include <SDL.h>
 
 #include "lua/Security.hxx"
 
-
-#include "spdlog/spdlog.h"
+#include "log.h"
 #include "lodepng.h"
 
 #include <memory>
@@ -22,18 +22,18 @@ void print(int x, int y, std::string str) {
 }
 
 int main(int argc, char** argv) {
-	spdlog::set_pattern("%H:%M:%S.%e [%^%l%$] %v");
-	spdlog::info("Starting lyds.");
+	log_info("Starting lids");
    	if(terminal::open() < 0)
 		return -1;
 	terminal::composition(true);
 	auto tileset = Tileset::from_file("Alloy.png");
-	spdlog::info("W: {} H: {}", tileset->width(), tileset->height());
+	if (tileset == NULL)
+		return -1;
+	log_info("W: %d H: %d", tileset->width(), tileset->height());
 	{
 		auto font = Tileset::from_file("font.png", 12, 12);
 		tileset->combine(font, 256);
 	}
-	spdlog::info("W: {} H: {}", tileset->width(), tileset->height());
 	terminal::set_tileset(tileset);
 	terminal::size(80, 50);
 	bool exit = false;
@@ -41,6 +41,13 @@ int main(int argc, char** argv) {
 	uint32_t currentTime = SDL_GetTicks();
 	uint32_t accumulator = 0;	
 	std::string fps;
+	auto con1 = Console(30, 20);
+	auto con2 = Console(20, 10);
+	con1.box(true);
+	con2.box(false);
+	con2.printf(1, 1, "Hello Mun");
+	con1.put(2, 3, 'A');
+	con1.printf(2 , 5, "OMG PRINTF: %d", rand() % 256);
 	while(!exit) {
 		uint32_t newTime = SDL_GetTicks();
 		uint32_t frameTime = newTime - currentTime;
@@ -48,11 +55,23 @@ int main(int argc, char** argv) {
 		accumulator += frameTime;
 		terminal::set_bg(0x32AAb4FF);
 		terminal::clear();
-		for(int x = 0; x < 80; x++) 
+/*		for(int x = 0; x < 80; x++) 
 		for(int y = 0; y < 50; y++) {
 			terminal::set_fg(terminal::to_rgba(rand() % 255, rand() % 255, rand() % 255, rand() % 255));
 			terminal::set_bg(terminal::to_rgba(rand() % 255, rand() % 255, rand() % 255, rand() % 255));
 			terminal::put(x, y, rand() % 256);
+		}*/
+		con1.set_fg(terminal::to_rgba(rand() % 255, rand() % 255, rand() % 255, rand() % 255));
+		con2.set_fg(terminal::to_rgba(rand() % 255, rand() % 255, rand() % 255, rand() % 255));
+		con1.printf(2 , 4, "OMG PRINTF: %d", rand() % 256);
+		con2.printf(3, 3, "WOAh: %d%d", rand() % 20, rand() % 1);
+		terminal::layer(1);
+		con1.draw(2, 2);
+		con2.draw(10, 10);
+		terminal::layer(0);
+		for(int i = 0; i < 50; i++) {
+			terminal::put(60, i, i + 200);
+			print(61, i, std::to_string(i + 200));
 		}
 /*		for(int x = 0; x < 80; x++) {
 			terminal::put(x, 1, x + 200);

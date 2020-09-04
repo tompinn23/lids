@@ -1,7 +1,8 @@
 #include "terminal.hxx"
 
-#include <spdlog/spdlog.h>
+#include "log.h"
 
+#include <cassert>
 
 namespace terminal {
 	void Layer::clear(uint32_t bg) {
@@ -40,26 +41,26 @@ namespace terminal {
 
 	Terminal::~Terminal() {
 		if(window != NULL || renderer != NULL || alias != NULL) {
-			spdlog::warn("Forgot to call terminal::close()");	
+			log_warn("Forgot to call terminal::close()");	
 		}
 	}
 
 	int Terminal::open() {
 		if(sdl_init == false) {
 			if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_EVENTS) < 0) {
-				spdlog::error("Failed to initialise SDL: {}", SDL_GetError());
+				log_error("Failed to initialise SDL: %s", SDL_GetError());
 				return TERM_SDL_INIT_ERR;
 			}
 			sdl_init = true;
 		}
 		window = SDL_CreateWindow("lyds", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600 , 0);
 		if(window == NULL) {
-			spdlog::error("Failed to create window: {}", SDL_GetError());
+			log_error("Failed to create window: %s", SDL_GetError());
 			return TERM_SDL_CREATE_ERR;
 		}
-		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 		if(renderer == NULL) {
-			spdlog::error("Failed to create renderer: {}", SDL_GetError());
+			log_error("Failed to create renderer: %s", SDL_GetError());
 			return TERM_SDL_CREATE_ERR;
 		}
 		return 0;
@@ -67,7 +68,7 @@ namespace terminal {
 
 	int Terminal::close() {
 		if(sdl_init == false) {
-			spdlog::warn("close() called before open() or double close()");
+			log_warn("close() called before open() or double close()");
 			return 0;
 		} else {
 			if(alias) {
@@ -87,7 +88,7 @@ namespace terminal {
 	}
 	void Terminal::size(int width, int height) {
 		if(!tileset) {
-			spdlog::warn("No active tileset size won't work correctly.");
+			log_warn("No active tileset size won't work correctly.");
 			SDL_SetWindowSize(window, width, height);
 			this->width = width;
 			this->height = height;
@@ -129,40 +130,43 @@ namespace terminal {
 	}
 
 	void Terminal::crop(int x, int y, int w, int h) {
-		spdlog::warn("Unimplemented function: Terminal::crop");
+		log_warn("Unimplemented function: Terminal::crop");
 	}
 
 	void Terminal::construct_alias() {
+		// Add 1 for the "blank" tile used for background colouring.
+		int tilesetCodes = tileset->codes.size() + 1;
 		if(tileset == NULL)
 			return;
 		if(tileset->codes.size() == 0) 
 			return;
 		SDL_RendererInfo info;
 		SDL_GetRendererInfo(renderer, &info);
-		int maxX = info.max_texture_width / tileset->width();
+		int maxHorzTiles = info.max_texture_width / tileset->width();
 		int texW, texH;
-		int rows = ceil(tileset->codes.size() / maxX);
+		int rows = ceil(tilesetCodes / maxHorzTiles);
 		if(rows < 1) rows = 1;
 		if(rows == 1)
-			texW = tileset->codes.size() * tileset->width();
+			texW = tilesetCodes * tileset->width();
 		else
 			texW = info.max_texture_width;
 		texH = rows * tileset->height();
-		spdlog::info("Tex W: {}, Tex H: {}", texW, texH);
-		bool size_change = false;
-		int w, h;
-		SDL_QueryTexture(alias, NULL, NULL, &w, &h);
-		if(w != texW || h != texH)
-			size_change = false;
-		if(alias != NULL && size_change) {
-			SDL_DestroyTexture(alias);
-			alias = NULL;
+		log_info("Tex W: %d, Tex H: %d", texW, texH);
+		if(alias != NULL) {
+			int w, h;
+			SDL_QueryTexture(alias, NULL, NULL, &w, &h);
+			if (w != texW || h != texH) {
+				SDL_DestroyTexture(alias);
+				alias = NULL;
+			}
+			assert(_CrtCheckMemory());
 		}
 		if(alias == NULL) {
 			alias = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, texW, texH);
+			assert(_CrtCheckMemory());
 		}
 		if(!alias) {
-			spdlog::error("Something went wrong: {}", SDL_GetError());
+			log_error("Something went wrong: %d", SDL_GetError());
 			throw std::runtime_error("OOPS");
 		}
 		int x = 0;
@@ -177,11 +181,14 @@ namespace terminal {
 			SDL_UpdateTexture(alias, &r, &white[0], tileset->width() * 4);
 			x++;
 		}
+		assert(_CrtCheckMemory());
 		for(auto& gl : tileset->codes) {
+
 			SDL_Rect r = { x* tileset->width(), y * tileset->height(), tileset->width(), tileset->height() };
 			clips.push_back(r);
 			SDL_UpdateTexture(alias, &r, &gl[0], tileset->width() * 4);
-			if(idx == maxX) {
+			assert(_CrtCheckMemory());
+			if(idx == maxHorzTiles) {
 				y++;
 				x = 0;
 			}
@@ -190,6 +197,8 @@ namespace terminal {
 		}
 		need_alias = false;
 		SDL_SetTextureBlendMode(alias, SDL_BLENDMODE_BLEND);
+
+
 	}
 	
 	inline int Terminal::render_entry(int x, int y, cell_entry& ent) {
@@ -233,6 +242,8 @@ namespace terminal {
 		if(need_alias || alias == NULL) {
 			construct_alias();
 		}
+
+
 		SDL_RenderClear(renderer);
 		SDL_Rect bg = clips[0];
 		int layer = 0;
@@ -250,7 +261,9 @@ namespace terminal {
 				idx++;
 			}
 		}
+
 		for(Layer& l : layers) {
+
 			int idx = 0;
 			for(auto &cel : l.cells) {
 				int x = idx % width;
@@ -270,8 +283,9 @@ namespace terminal {
 				}
 				idx++;
 			}
+			layer++;
 		}
-		layer++;
+	
 		SDL_RenderPresent(renderer);
 	}
 
@@ -321,6 +335,11 @@ namespace terminal {
 			default:
 				return 0;
 		}
+	}
+
+	void Terminal::raw_put(int x, int y, cell c) {
+		layers[operating_layer].cells[y * width + x] = c;
+		
 	}
 
 // ################# FUNCTIONS ############## //
@@ -386,11 +405,13 @@ namespace terminal {
 		return g_terminal->state(slot);
 	}
 
+	void raw_put(int x, int y, cell c) {
+		g_terminal->raw_put(x, y, c);
+	}
+
 	int has_input();
 	int read();
 	int peek();
 
 
 }
-
-

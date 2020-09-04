@@ -167,12 +167,12 @@ void __PHYSFS_smallFree(void *ptr);
    want to avoid. But you can build with this #defined to 0 if you would
    like to turn off everything except a handful of things you opt into. */
 #ifndef PHYSFS_SUPPORTS_DEFAULT
-#define PHYSFS_SUPPORTS_DEFAULT 0
+#define PHYSFS_SUPPORTS_DEFAULT 1
 #endif
 
 
 #ifndef PHYSFS_SUPPORTS_ZIP
-#define PHYSFS_SUPPORTS_ZIP 1
+#define PHYSFS_SUPPORTS_ZIP PHYSFS_SUPPORTS_DEFAULT
 #endif
 #ifndef PHYSFS_SUPPORTS_7Z
 #define PHYSFS_SUPPORTS_7Z PHYSFS_SUPPORTS_DEFAULT
