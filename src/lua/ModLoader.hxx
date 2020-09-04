@@ -1,11 +1,13 @@
 #pragma once
 
-#include "Mod.h"
+#include "Mod.hxx"
 
 #include <vector>
 namespace LuaApi {
     class ModLoader {
+	public:
         ModLoader();
         std::vector<Mod> GetModList();
+
     };
 }

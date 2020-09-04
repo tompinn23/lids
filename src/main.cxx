@@ -55,35 +55,7 @@ int main(int argc, char** argv) {
 		accumulator += frameTime;
 		terminal::set_bg(0x32AAb4FF);
 		terminal::clear();
-/*		for(int x = 0; x < 80; x++) 
-		for(int y = 0; y < 50; y++) {
-			terminal::set_fg(terminal::to_rgba(rand() % 255, rand() % 255, rand() % 255, rand() % 255));
-			terminal::set_bg(terminal::to_rgba(rand() % 255, rand() % 255, rand() % 255, rand() % 255));
-			terminal::put(x, y, rand() % 256);
-		}*/
-		con1.set_fg(terminal::to_rgba(rand() % 255, rand() % 255, rand() % 255, rand() % 255));
-		con2.set_fg(terminal::to_rgba(rand() % 255, rand() % 255, rand() % 255, rand() % 255));
-		con1.printf(2 , 4, "OMG PRINTF: %d", rand() % 256);
-		con2.printf(3, 3, "WOAh: %d%d", rand() % 20, rand() % 1);
-		terminal::layer(1);
-		con1.draw(2, 2);
-		con2.draw(10, 10);
-		terminal::layer(0);
-		for(int i = 0; i < 50; i++) {
-			terminal::put(60, i, i + 200);
-			print(61, i, std::to_string(i + 200));
-		}
-/*		for(int x = 0; x < 80; x++) {
-			terminal::put(x, 1, x + 200);
-			if(x > 0) {
-				terminal::put_ex(x, 2, 6, 0, x);
-				terminal::put_ex(x + 1, 2, -6, 0, x);
-			}
-		}
-		for(int i = 0; i < 80; i++) {
-			terminal::put(i, 4, 256 + i);
-		}
-		print(8, 8, "Hello World!"); */
+
 		terminal::set_bg(0xab23fcff);
 		terminal::set_fg(0xFFFFFFFF);
 		if(frameTime != 0) {

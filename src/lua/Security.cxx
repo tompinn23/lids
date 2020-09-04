@@ -3,6 +3,8 @@
 #include <string>
 #include "physfs.h"
 
+#include "Mod.hxx"
+
 namespace LuaApi {
 	
 	const std::vector<std::string> whitelisted_builtins = {
@@ -25,7 +27,7 @@ namespace LuaApi {
 		"string", "table", "math" 
 	};
 
-	Security::Security(sol::state_view lua) {
+	Security::Security(sol::state_view lua, const Mod& ref) : ref(ref) {
 		sandbox = sol::environment(lua, sol::create);
 		for(auto& func : whitelisted_builtins) {
 			sandbox[func] = lua[func];
@@ -42,7 +44,7 @@ namespace LuaApi {
 	}
 
 	int Security::Require(sol::state_view lua, const std::string path) {
-//		std::string name = ("mods/" + ModLoader::get_current()->name());
+//      std::string name = ("mods/" + ModLoader::get_current()->name());
 		std::string name = "FIXME";
 		if(PHYSFS_exists(name.c_str()) == 0) {
 			sol::stack::push(lua.lua_state(), "Failed to find file.");
@@ -64,7 +66,7 @@ namespace LuaApi {
 
 	int LoadFileRequire(lua_State* L) {
 		sol::state_view lua(L);
-		LuaApi::Security sec = lua["security"];
+		LuaApi::SecurityManager
 		std::string path = sol::stack::get<std::string>(L, 1);
 		return sec.Require(lua, path);
 	}
