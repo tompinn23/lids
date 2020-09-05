@@ -13,9 +13,9 @@ namespace LuaApi
         const std::string _author;
     public:
         Mod(const std::string name, const std::string version, const std::string desc, const std::string author);
-        const std::string& name() { return _name; }
-        const std::string& version() { return _version; }
-        const std::string& desc() { return _desc; }
-        const std::string& author() { return _author; }
+        std::string name() { return _name; }
+        std::string version() { return _version; }
+        std::string desc() { return _desc; }
+        std::string author() { return _author; }
     };
 } // namespace LuaApi

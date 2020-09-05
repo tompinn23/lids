@@ -159,11 +159,9 @@ namespace terminal {
 				SDL_DestroyTexture(alias);
 				alias = NULL;
 			}
-			assert(_CrtCheckMemory());
 		}
 		if(alias == NULL) {
 			alias = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, texW, texH);
-			assert(_CrtCheckMemory());
 		}
 		if(!alias) {
 			log_error("Something went wrong: %d", SDL_GetError());
@@ -181,13 +179,11 @@ namespace terminal {
 			SDL_UpdateTexture(alias, &r, &white[0], tileset->width() * 4);
 			x++;
 		}
-		assert(_CrtCheckMemory());
 		for(auto& gl : tileset->codes) {
 
 			SDL_Rect r = { x* tileset->width(), y * tileset->height(), tileset->width(), tileset->height() };
 			clips.push_back(r);
 			SDL_UpdateTexture(alias, &r, &gl[0], tileset->width() * 4);
-			assert(_CrtCheckMemory());
 			if(idx == maxHorzTiles) {
 				y++;
 				x = 0;

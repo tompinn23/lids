@@ -11,12 +11,16 @@
 namespace LuaApi {
 	class Security {
 	public:
-		Security(sol::state_view lua, const Mod& ref);
-		Security(sol::state_view lua, const Mod &&) = delete;
+		Security(sol::state_view lua, Mod& ref);
+		Security(sol::state_view lua, Mod &&) = delete;
+		void SetSecurityKey(std::string uuid);
 		int Require(sol::state_view lua, const std::string path);
+		static void read_only_env(const char* accessor, sol::stack_object val);
+		void run(sol::state_view l, std::string file);
 	private:
-		sol::environment sandbox;
-		const Mod& ref;
+		sol::table sandbox;
+		sol::environment ro_env;
+		Mod& ref;
 	};
 
 	class SecurityManager {
@@ -28,11 +32,11 @@ namespace LuaApi {
 		}
 		SecurityManager(SecurityManager const&) = delete;
 		void operator=(SecurityManager const&) = delete;
-		Security& GetSecurityObj(std::string key);
-		std::string AddSecurityObj(Security obj);
-		void SetSecurityObj(std::string key, Security obj); 
+		std::shared_ptr<Security> GetSecurityObj(std::string key);
+		std::string AddSecurityObj(std::shared_ptr<Security> obj);
+		void SetSecurityObj(std::string key, std::shared_ptr<Security> obj); 
 	private:
-		std::unordered_map<std::string, Security> security_map;
+		std::unordered_map<std::string, std::shared_ptr<Security>> security_map;
 		SecurityManager() {}
 
 	};

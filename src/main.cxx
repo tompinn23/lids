@@ -5,6 +5,7 @@
 #include <SDL.h>
 
 #include "lua/Security.hxx"
+#include "lua/Mod.hxx"
 
 #include "log.h"
 #include "lodepng.h"
@@ -21,8 +22,20 @@ void print(int x, int y, std::string str) {
 	}
 }
 
+void lua_testing() {
+	using namespace LuaApi;
+	sol::state lua;
+	auto m = Mod("test", "1.0.0", "This is a test", "Tom Pinnock");
+	auto sm = Security(lua, m);
+	log_info("Running script");
+	sm.run(lua, "test.lua");
+}
+
 int main(int argc, char** argv) {
 	log_info("Starting lids");
+	lua_testing();
+	return 0;
+
    	if(terminal::open() < 0)
 		return -1;
 	terminal::composition(true);
