@@ -1,6 +1,5 @@
 #pragma once
 
-#include "sol/state_view.hpp"
 #define SOL_ALL_SAFETIES_ON 1
 #include "sol/sol.hpp"
 
@@ -9,13 +8,15 @@
 #include <unordered_map>
 
 namespace LuaApi {
+	int LoadFileRequire(lua_State* L);
 	class Security {
 	public:
 		Security(sol::state_view lua, Mod& ref);
 		Security(sol::state_view lua, Mod &&) = delete;
+		~Security();
 		void SetSecurityKey(std::string uuid);
 		int Require(sol::state_view lua, const std::string path);
-		static void read_only_env(const char* accessor, sol::stack_object val);
+		static void read_only_env(sol::table t, sol::stack_object val);
 		void run(sol::state_view l, std::string file);
 	private:
 		sol::table sandbox;
@@ -35,6 +36,7 @@ namespace LuaApi {
 		std::shared_ptr<Security> GetSecurityObj(std::string key);
 		std::string AddSecurityObj(std::shared_ptr<Security> obj);
 		void SetSecurityObj(std::string key, std::shared_ptr<Security> obj); 
+		void clear_before_lua_dies() { security_map.clear(); }
 	private:
 		std::unordered_map<std::string, std::shared_ptr<Security>> security_map;
 		SecurityManager() {}

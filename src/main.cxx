@@ -3,12 +3,14 @@
 #include "terminal.hxx"
 
 #include <SDL.h>
+#include <physfs.h>
 
 #include "lua/Security.hxx"
 #include "lua/Mod.hxx"
 
 #include "log.h"
 #include "lodepng.h"
+
 
 #include <memory>
 
@@ -25,14 +27,20 @@ void print(int x, int y, std::string str) {
 void lua_testing() {
 	using namespace LuaApi;
 	sol::state lua;
+	lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::string, sol::lib::math, sol::lib::table);
+	lua.add_package_loader(LuaApi::LoadFileRequire, true);
 	auto m = Mod("test", "1.0.0", "This is a test", "Tom Pinnock");
 	auto sm = Security(lua, m);
+	SecurityManager::Instance().AddSecurityObj(std::make_shared<Security>(sm));
+
 	log_info("Running script");
 	sm.run(lua, "test.lua");
+	SecurityManager::Instance().clear_before_lua_dies();
 }
 
 int main(int argc, char** argv) {
 	log_info("Starting lids");
+	PHYSFS_init(argv[0]);
 	lua_testing();
 	return 0;
 
@@ -96,7 +104,6 @@ int main(int argc, char** argv) {
 		}
 	}
 	/*	sol::state lua;
-	lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::string, sol::lib::math, sol::lib::table);
 	auto sec = LuaApi::Security(lua);
 	lua["security"] = sec;
 	lua.script(R"(
