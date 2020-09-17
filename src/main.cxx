@@ -5,8 +5,10 @@
 #include <SDL.h>
 #include <physfs.h>
 
-#include "lua/Security.hxx"
 #include "lua/Mod.hxx"
+#include "lua/ModState.hxx"
+#include "Input.hxx"
+#include "ui.hxx"
 
 #include "log.h"
 #include "lodepng.h"
@@ -25,25 +27,20 @@ void print(int x, int y, std::string str) {
 }
 
 void lua_testing() {
+	PHYSFS_mount("data/test_mod", "test_mod", 1);
 	using namespace LuaApi;
 	sol::state lua;
 	lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::string, sol::lib::math, sol::lib::table);
 	lua.add_package_loader(LuaApi::LoadFileRequire, true);
-	auto m = Mod("test", "1.0.0", "This is a test", "Tom Pinnock");
-	auto sm = Security(lua, m);
-	SecurityManager::Instance().AddSecurityObj(std::make_shared<Security>(sm));
-
-	log_info("Running script");
-	sm.run(lua, "test.lua");
-	SecurityManager::Instance().clear_before_lua_dies();
+	auto mod_info = Mod::from_json("test_mod");
+	auto state = ModState(mod_info);
+	state.preInit();
 }
 
 int main(int argc, char** argv) {
 	log_info("Starting lids");
 	PHYSFS_init(argv[0]);
 	lua_testing();
-	return 0;
-
    	if(terminal::open() < 0)
 		return -1;
 	terminal::composition(true);
@@ -57,18 +54,17 @@ int main(int argc, char** argv) {
 	}
 	terminal::set_tileset(tileset);
 	terminal::size(80, 50);
+	InputManager manager;
+	init_commands(manager);
+	manager.setCommmandDomain("ascii");
 	bool exit = false;
 	const uint32_t dt = 20;
 	uint32_t currentTime = SDL_GetTicks();
 	uint32_t accumulator = 0;	
 	std::string fps;
-	auto con1 = Console(30, 20);
-	auto con2 = Console(20, 10);
-	con1.box(true);
-	con2.box(false);
-	con2.printf(1, 1, "Hello Mun");
-	con1.put(2, 3, 'A');
-	con1.printf(2 , 5, "OMG PRINTF: %d", rand() % 256);
+	std::string txt = "";
+	UITextBox txtbox = UITextBox(false, 14, 4);
+	txtbox.SetText("Hello, my name is jimbo.!!");
 	while(!exit) {
 		uint32_t newTime = SDL_GetTicks();
 		uint32_t frameTime = newTime - currentTime;
@@ -83,20 +79,17 @@ int main(int argc, char** argv) {
 			terminal::clear_area(0, 0, 10, 1);
 			print(0, 0, fps);
 		}
+		print(3, 3, txt);
+		txtbox.Draw(6, 6);
 		terminal::refresh();
-		SDL_Event event;
-		while (SDL_PollEvent(&event))
-		{
-			switch (event.type)
-			{
-			case SDL_KEYDOWN:
-			case SDL_KEYUP:
-				break;
-			case SDL_QUIT:
+		manager.Poll();
+		Command cmd;
+		while(manager.getEvent(&cmd)) {
+			if(cmd.type == CMD_QUIT) 
 				exit = true;
-				break;
-			}
+			txtbox.Update(cmd);
 		}
+	
 		while(accumulator >= dt)
 		{
 			fps = fmt::format("Time: {:d}fps", 1000 / frameTime); 

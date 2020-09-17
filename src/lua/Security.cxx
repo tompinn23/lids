@@ -8,6 +8,7 @@
 
 
 #include "Mod.hxx"
+#include "sol/state_handling.hpp"
 #include "sole.hpp"
 
 namespace LuaApi {
@@ -33,54 +34,12 @@ namespace LuaApi {
 	const std::vector<std::string> safe_libraries = {
 		"string", "table", "math" 
 	};
-	
-	int LoadFileRequire(lua_State* L) {
-		log_error("got here");
-		sol::state_view lua(L);
-		std::string path = sol::stack::get<std::string>(L, 1);
-		lua_Debug info;
-		// Level 0 means current function (this C function, which is useless for our purposes)
-		// Level 1 means next call frame up the stack. This is probably the environment we're looking for?
-		int level = 2;
-		int pre_stack_size = lua_gettop(L);
-		if (lua_getstack(L, level, &info) != 1) {
-			// failure: call it quits
-			log_error("error: unable to traverse the stack");
-			lua_settop(L, pre_stack_size);
-			return 0;
-		}
-		// the "f" identifier is the most important here
-		// it pushes the function running at `level` onto the stack:
-		// we can get the environment from this
-		// the rest is for printing / debugging purposes
-		if (lua_getinfo(L, "fnluS", &info) == 0) {
-			// failure?
-			log_error("manually -- error: unable to get stack information");
-			lua_settop(L, pre_stack_size);
-			return 0;
-		}
 
-		// Okay, so all the calls worked.
-		// Print out some information about this "level"
-		std::cout << "manually -- [" << level << "] " << info.short_src << ":" << info.currentline
-			<< " -- " << (info.name ? info.name : "<unknown>") << "[" << info.what << "]" << std::endl;
-	
-		// Grab the function off the top of the stack
-		// remember: -1 means top, -2 means 1 below the top, and so on...
-		// 1 means the very bottom of the stack, 
-		// 2 means 1 more up, and so on to the top value...
-		sol::function f(L, -1);
-		// The environment can now be ripped out of the function
-		sol::environment env(sol::env_key, f);
-		if (!env.valid()) {
-			log_error("manually -- error: no environment to get");
-			lua_settop(L, pre_stack_size);
-			return 0;
-		}
-		for(auto &a : env) {
-			log_info("env: %s, %s", a.first.as<std::string>(), a.second.as<std::string>());
-		}
-		return SecurityManager::Instance().GetSecurityObj(env["key_fuck_key"])->Require(lua, path);
+	int LoadFileRequire(lua_State* L) {
+		sol::state_view lua(L);
+		Security* sec = lua.registry()["security"];
+		std::string path = sol::stack::get<std::string>(L, 1);
+		return sec->Require(lua, path);
 	}
 
 	Security::Security(sol::state_view lua, Mod& ref) : ref(ref) {
@@ -105,10 +64,50 @@ namespace LuaApi {
 		}
 		mt["__index"] = sandbox;
 		mt["__newindex"] = Security::read_only_env;
-		
+		sandbox["print"] = Security::print;
 	}
 
 	Security::~Security() {	
+	}
+	
+	void Security::print(sol::this_state st, sol::variadic_args va) {
+		lua_State* L = st;
+		lua_Debug info;
+		int level = 1;
+		int pre_stack_size = lua_gettop(L);
+		bool failure = false;
+		if (lua_getstack(L, level, &info) != 1) {
+			// failure: call it quits
+			failure = true;
+			lua_settop(L, pre_stack_size);
+		}
+		// the "f" identifier is the most important here
+		// it pushes the function running at `level` onto the stack:
+		// we can get the environment from this
+		// the rest is for printing / debugging purposes
+		if (lua_getinfo(L, "lS", &info) == 0) {
+			// failure?
+			failure = true;
+			lua_settop(L, pre_stack_size);
+		}
+		std::string str = "";
+		for(auto arg : va) {
+			if(arg.is<sol::nil_t>())
+				str += "nil";
+			else if(arg.is<bool>())
+				str += (arg.as<bool>() ? "true" : "false");
+			else if(arg.is<std::string>())
+				str += arg;
+			else if(arg.is<int>())
+				str += fmt::sprintf("%d", arg.as<int>());
+			else
+				str += fmt::sprintf("%p",arg.as<sol::object>().pointer());
+			str+= " ";
+		}
+		if(failure)
+			fmt_log_log(LOG_INFO, "??lua", 0, "%s", str);
+		else
+			fmt_log_log(LOG_INFO, info.short_src, info.currentline, "%s", str);
 	}
 
 	void Security::read_only_env(sol::table t, sol::stack_object val) {
@@ -119,22 +118,33 @@ namespace LuaApi {
 		sandbox["key_fuck_key"] = uuid;
 	}
 
-	void Security::run(sol::state_view l, std::string file) {
+	int Security::run(sol::state_view l, std::string file) {
 		log_info("running script: %s", file);
-		auto pfr = l.safe_script_file(file, ro_env, sol::script_pass_on_error);
+		auto fp = PHYSFS_openRead((ref.id() + "/" + file).c_str());
+		if(fp == NULL) {
+			log_error("Failed to load file %s from mod: %s", file, ref.id());
+			return -1;
+		}
+		size_t sz = PHYSFS_fileLength(fp);
+		char* arr = new char[sz + 1];
+		PHYSFS_readBytes(fp, arr, sz);
+		arr[sz] = '\0';
+		PHYSFS_close(fp);
+		auto pfr = l.safe_script(arr, ro_env, (ref.id() + "::" + file), sol::load_mode::text);
 		if(!pfr.valid()) {
 			sol::error err = pfr;
 			sol::call_status status = pfr.status();
 			log_error("Lua Error :: type :: %s :: %s", sol::to_string(status), err.what());
+			return -1;
 		}
+		return 0;
 	}
 
 	int Security::Require(sol::state_view lua, const std::string path) {
 //      std::string name = ("mods/" + ModLoader::get_current()->name());
-		auto name = ref.name();
-		log_info("require working! %s", name);
+		auto name = ref.id();
 		if(PHYSFS_exists(name.c_str()) == 0) {
-			sol::stack::push(lua.lua_state(), "Failed to find file.");
+			sol::stack::push(lua.lua_state(), "Failed to find mod data. WTF!");
 			return 1;
 		}
 		std::string converted = path;
@@ -143,28 +153,28 @@ namespace LuaApi {
 			converted.replace(pos, 1, "/");
 			pos = converted.find(".");
 		}
-		std::string full = name + "/" + converted;
-		PHYSFS_Stat st;		
-		if(PHYSFS_stat(converted.c_str(), &st) == 0) {
-			
+		std::string full = name + "/" + converted + ".lua";
+		log_info("requiring :: %s", full);
+		auto fp = PHYSFS_openRead(full.c_str());
+		if(fp == NULL) {
+			sol::stack::push(lua.lua_state(), PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+			return 1;
 		}
-		return 0;
+		size_t sz = PHYSFS_fileLength(fp);
+		char* arr = new char[sz + 1];
+		PHYSFS_readBytes(fp, arr, sz);
+		arr[sz]='\0';
+		luaL_loadbufferx(lua.lua_state(), arr, sz, full.c_str(), "t");
+		delete[] arr;
+		return 1;
+	}
+	
+	void Security::set_default_env(sol::state_view lua) {
+		// Get environment registry index
+    	lua_rawgeti(lua, LUA_REGISTRYINDEX, ro_env.registry_index());
+		// Set the global environment
+		lua_rawseti(lua, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
 	}
 
-
-	std::shared_ptr<Security> SecurityManager::GetSecurityObj(std::string key) {
-		return security_map.at(key);
-	}
-
-	std::string SecurityManager::AddSecurityObj(std::shared_ptr<Security> obj) {
-		sole::uuid key = sole::uuid4();
-		security_map.emplace(key.str(), obj);
-		obj->SetSecurityKey(key.str());
-		return key.str();
-	}
-
-	void SecurityManager::SetSecurityObj(std::string key, std::shared_ptr<Security> obj)	{
-		security_map.emplace(key, obj);
-	}
 
 }

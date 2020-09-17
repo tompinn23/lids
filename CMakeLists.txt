@@ -36,10 +36,14 @@ add_executable(lyds src/main.cxx
 	src/tileset.cxx
     src/terminal.cxx 
 	src/console.cxx
+	src/Input.cxx
 	src/log.cxx
+	src/ui.cxx
     src/lua/Security.cxx
     src/lua/Mod.cxx
-    src/lua/ModLoader.cxx)
+    src/lua/ModLoader.cxx
+	src/lua/ModState.cxx
+	src/lua/GameScript.cxx)
 target_link_libraries(lyds SDL2 sol2 lua_static physfs-static json lodepng fmt::fmt)
 if(MSVC)
 target_link_libraries(lyds SDL2main)
@@ -51,10 +55,10 @@ add_custom_command(
         TARGET lyds POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
                 ${CMAKE_SOURCE_DIR}/Alloy.png
-                ${CMAKE_CURRENT_BINARY_DIR}/Alloy.png)
+				${CMAKE_BINARY_DIR}/Alloy.png)
                 
 add_custom_command(
         TARGET lyds POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
                 ${CMAKE_SOURCE_DIR}/font.png
-                ${CMAKE_CURRENT_BINARY_DIR}/font.png)
+                ${CMAKE_BINARY_DIR}/font.png)
